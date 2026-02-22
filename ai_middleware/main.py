@@ -23,7 +23,7 @@ app.add_middleware(
 # Initialize OpenAI client with error handling
 try:
     from openai import OpenAI
-    client = OpenAI()
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 except Exception as e:
     print(f"⚠️  Warning: OpenAI client initialization failed: {e}")
     print("Please set your OPENAI_API_KEY in the .env file")
@@ -66,37 +66,6 @@ tools = [
             }
         }
     },
-    {
-        "type": "function",
-        "function": {
-            "name": "update_product",
-            "description": "Update a product in the warehouse",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "product_id": {"type": "integer"},
-                    "product_name": {"type": "string"},
-                    "quantity": {"type": "integer"},
-                    "location": {"type": "string"}
-                },
-                "required": ["product_id"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "delete_product",
-            "description": "Delete a product from the warehouse",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "product_id": {"type": "integer"}
-                },
-                "required": ["product_id"]
-            }
-        }
-    }
 ]
 
 # ----------------------------
@@ -108,12 +77,6 @@ def call_backend(function_name, args):
             r = requests.get(BASE_BACKEND_URL)
         elif function_name == "add_product":
             r = requests.post(BASE_BACKEND_URL, json=args)
-        elif function_name == "update_product":
-            product_id = args.pop("product_id")
-            r = requests.put(f"{BASE_BACKEND_URL}/{product_id}", json=args)
-        elif function_name == "delete_product":
-            product_id = args["product_id"]
-            r = requests.delete(f"{BASE_BACKEND_URL}/{product_id}")
         else:
             return "Unknown function"
         

@@ -6,7 +6,108 @@ import axios from "axios";
 interface Message {
   role: "user" | "assistant";
   content: string;
+  isTable?: boolean;
 }
+
+// Helper function to format JSON responses as tables
+const formatResponse = (response: any): { content: string; isTable: boolean } => {
+  // If it's not an object, return as regular text
+  if (typeof response !== 'object' || response === null) {
+    return { content: String(response), isTable: false };
+  }
+
+  // Check if it's a warehouse data response with 'data' array
+  if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+    const data = response.data;
+    const headers = Object.keys(data[0]);
+    
+    // Create table header
+    let tableHtml = `
+      <div class="table-container">
+        <div class="table-header">
+          ✅ Successfully retrieved your warehouse inventory (${response.count || data.length} products found)
+        </div>
+        <table class="warehouse-table">
+          <thead>
+            <tr>
+              ${headers.map(header => `<th>${header.replace(/_/g, ' ').toUpperCase()}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    // Create table rows
+    data.forEach((item: any) => {
+      tableHtml += '<tr>';
+      headers.forEach(header => {
+        const value = item[header];
+        // Format numbers with commas
+        const formattedValue = typeof value === 'number' ? value.toLocaleString() : value;
+        tableHtml += `<td>${formattedValue}</td>`;
+      });
+      tableHtml += '</tr>';
+    });
+
+    tableHtml += `
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    return { content: tableHtml, isTable: true };
+  }
+
+  // For single item responses or other structured data
+  if (response.product_name || response.product_id) {
+    const item = response;
+    const headers = Object.keys(item);
+    
+    let tableHtml = `
+      <div class="table-container">
+        <div class="table-header">
+          📦 Product Information
+        </div>
+        <table class="warehouse-table">
+          <thead>
+            <tr>
+              ${headers.map(header => `<th>${header.replace(/_/g, ' ').toUpperCase()}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+    `;
+
+    headers.forEach(header => {
+      const value = item[header];
+      const formattedValue = typeof value === 'number' ? value.toLocaleString() : value;
+      tableHtml += `<td>${formattedValue}</td>`;
+    });
+
+    tableHtml += `
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    return { content: tableHtml, isTable: true };
+  }
+
+  // For success/failure messages
+  if (response.status) {
+    const statusEmoji = response.status === 'success' ? '✅' : '❌';
+    const message = response.message || response.reply || 'Operation completed';
+    return { 
+      content: `<div class="status-message ${response.status}">
+        ${statusEmoji} ${message}
+      </div>`, 
+      isTable: false 
+    };
+  }
+
+  // Fallback to JSON string for other objects
+  return { content: JSON.stringify(response, null, 2), isTable: false };
+};
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -34,11 +135,13 @@ export default function Home() {
 
     try {
       const res = await axios.post("http://127.0.0.1:8001/chat", { message: userInput });
-      const assistantMessage = typeof res.data.reply === "object" 
-        ? JSON.stringify(res.data.reply, null, 2)
-        : res.data.reply;
+      const formattedResponse = formatResponse(res.data.reply);
       
-      setMessages(prev => [...prev, { role: "assistant", content: assistantMessage }]);
+      setMessages(prev => [...prev, { 
+        role: "assistant", 
+        content: formattedResponse.content,
+        isTable: formattedResponse.isTable
+      }]);
     } catch (err) {
       console.error("Error:", err);
       setMessages(prev => [...prev, { 
@@ -100,16 +203,6 @@ export default function Home() {
                     <div className="example-title">View Inventory</div>
                     <div className="example-text">"Show all products"</div>
                   </div>
-                  
-                  <div className="example-card" onClick={() => selectExample("Update Wireless Mouse quantity to 75")}>
-                    <div className="example-title">Update Product</div>
-                    <div className="example-text">"Update Wireless Mouse quantity to 75"</div>
-                  </div>
-                  
-                  <div className="example-card" onClick={() => selectExample("Delete product 1")}>
-                    <div className="example-title">Delete Product</div>
-                    <div className="example-text">"Delete product 1"</div>
-                  </div>
                 </div>
               </div>
             )}
@@ -117,13 +210,13 @@ export default function Home() {
             {messages.map((msg, i) => (
               <div 
                 key={i} 
-                className={`message ${msg.role}`}
+                className={`message ${msg.role} ${msg.isTable ? 'message-table' : ''}`}
               >
                 <div className={`message-header ${msg.role}-label`}>
                   <span>🤖</span>
                   <span>{msg.role === "user" ? "You" : "AI Assistant"}</span>
                 </div>
-                <div className="message-content">{msg.content}</div>
+                <div className="message-content" dangerouslySetInnerHTML={{ __html: msg.content }} />
               </div>
             ))}
             
