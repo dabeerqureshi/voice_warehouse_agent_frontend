@@ -31,6 +31,32 @@ voice_warehouse_agent_frontend/
 - OpenAI API Key
 - Backend API running at `http://localhost:8000/warehouse/data/`
 
+### Installation Steps
+
+1. **Clone the repository** (if not already done):
+   ```bash
+   git clone <repository-url>
+   cd voice_warehouse_agent_frontend
+   ```
+
+2. **Install AI Middleware dependencies**:
+   ```bash
+   cd ai_middleware
+   pip install -r requirements.txt
+   ```
+
+3. **Configure AI Middleware**:
+   ```bash
+   cp .env.example .env
+   # Edit .env and add your OPENAI_API_KEY
+   ```
+
+4. **Install Frontend dependencies**:
+   ```bash
+   cd ../frontend
+   npm install
+   ```
+
 ### 1. Setup AI Middleware
 
 ```bash
@@ -54,6 +80,7 @@ BACKEND_URL=http://localhost:8000/warehouse/data
 
 Start the AI middleware:
 ```bash
+cd ai_middleware
 uvicorn main:app --reload --port 8001
 ```
 
@@ -78,8 +105,25 @@ Ensure your warehouse backend API is running at `http://localhost:8000/warehouse
 
 - `GET /` - Get all products
 - `POST /` - Add a product
-- `PUT /{product_id}` - Update a product
-- `DELETE /{product_id}` - Delete a product
+
+## 📁 Project Structure
+
+```
+voice_warehouse_agent_frontend/
+├── README.md              # This documentation file
+├── SETUP.md              # Detailed setup instructions
+├── ai_middleware/        # AI middleware service
+│   ├── main.py          # FastAPI application
+│   ├── requirements.txt  # Python dependencies
+│   ├── .env.example     # Environment variables template
+│   └── .env            # Environment variables (create from .env.example)
+└── frontend/            # React/Next.js frontend
+    ├── package.json     # Node.js dependencies
+    ├── next.config.ts   # Next.js configuration
+    ├── tsconfig.json    # TypeScript configuration
+    └── src/            # Source code
+        └── app/        # Next.js app directory
+```
 
 ## 💬 Supported Commands
 
@@ -94,15 +138,6 @@ The AI middleware supports these natural language commands:
 - "Add 50 Wireless Mouse at location A-01-01"
 - "Create a new product: Bluetooth Keyboard, quantity 25, location B-02-03"
 
-### Update Products
-- "Update Wireless Mouse quantity to 75"
-- "Change the location of product 123 to C-01-01"
-- "Update product 456 with name 'Gaming Mouse' and quantity 100"
-
-### Delete Products
-- "Delete product 1"
-- "Remove the item with ID 123"
-- "Delete Wireless Mouse from inventory"
 
 ## 🔧 Configuration
 
@@ -126,8 +161,46 @@ The frontend is configured to connect to the AI middleware at `http://localhost:
 ### Running All Services
 
 1. **Backend**: Start your warehouse backend on port 8000
-2. **AI Middleware**: `cd ai_middleware && uvicorn main:app --reload --port 8001`
-3. **Frontend**: `cd frontend && npm run dev`
+2. **AI Middleware**: 
+   ```bash
+   cd ai_middleware
+   uvicorn main:app --reload --port 8001
+   ```
+3. **Frontend**: 
+   ```bash
+   cd frontend
+   npm run dev
+   ```
+
+### Service URLs
+
+- **Frontend**: http://localhost:3000
+- **AI Middleware**: http://localhost:8001
+- **Backend**: http://localhost:8000/warehouse/data
+
+### Development Workflow
+
+1. **Start Backend Service** (if not already running):
+   ```bash
+   # Your backend service should be running on port 8000
+   ```
+
+2. **Start AI Middleware**:
+   ```bash
+   cd ai_middleware
+   uvicorn main:app --reload --port 8001
+   ```
+
+3. **Start Frontend**:
+   ```bash
+   cd frontend
+   npm run dev
+   ```
+
+4. **Access the Application**:
+   - Open http://localhost:3000 in your browser
+   - The frontend will connect to the AI middleware at http://localhost:8001
+   - The AI middleware will forward requests to your backend at http://localhost:8000
 
 ### Testing the System
 
@@ -166,6 +239,7 @@ Try these commands in the chat interface:
 ### Common Issues
 
 1. **"Error connecting to AI middleware"**
+   - uvicorn main:app --reload --port 8001
    - Ensure AI middleware is running on `http://localhost:8001`
    - Check firewall settings
 
